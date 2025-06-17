@@ -49,21 +49,21 @@ resource "aws_security_group" "asg" {
     from_port = 80
     to_port = 80
     protocol = "tcp"
-    cidr_blocks = ["0.0.0.0/16"]
+    cidr_blocks = ["0.0.0.0/0"]
   }
   ingress{
     description = "SSH"
     from_port = 22
     to_port = 22
     protocol = "tcp"
-    cidr_blocks = ["0.0.0.0/16"]
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress{
     from_port = 0
     to_port = 0
     protocol = "-1"
-    cidr_blocks = ["0.0.0.0/16"]
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   tags = {
@@ -77,6 +77,7 @@ resource "aws_instance" "server" {
   key_name = aws_key_pair.example.key_name
   vpc_security_group_ids = [aws_security_group.asg.id]
   subnet_id = aws_subnet.sub1.id
+  associate_public_ip_address = true
 
   connection {
     type = "ssh"
@@ -86,18 +87,16 @@ resource "aws_instance" "server" {
   }
 
   provisioner "file" {
-    source = "app.py"
-    destination = "/home/ubuntu/app.py"
+    source = "server.py"
+    destination = "/home/ubuntu/server.py"
   }
 
   provisioner "remote-exec" {
-    inline = [ 
-      "echo 'Hello from the remote instance'",
-      "sudo apt update -y",
-      "sudo apt-get install -y python3-pip",
-      "cd /home/ubuntu",
-      "sudo pip3 install flask",
-      "sudo python3 app.py &"
-     ]
+  inline = [ 
+    "sudo apt-get update -y",
+    "sudo apt-get install -y python3",
+    "cd /home/ubuntu",
+    "sudo nohup python3 server.py > server.log 2>&1 &"
+    ]
   }
 }
